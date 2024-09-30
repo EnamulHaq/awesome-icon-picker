@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Grid } from 'react-virtualized';
-import renderSVG from './components/icon-picker/controls/renderIcon';
-import defaultSvgIcon from "./components/defaultSvgIcon";
+import defaultSvgIcon from "./defaultSvgIcon";
 import './editor.css';
-import svgIcon from "./components/svgIcon";
 
 export default function FBIconPicker(props) {
 	const { value, setIconHandler } = props;
@@ -13,6 +11,7 @@ export default function FBIconPicker(props) {
 	const [defaultIcons, setDefaultIcons] = useState(defaultSvgIcon);
 	const [filteredDefaultIcons, setFilteredDefaultIcons] = useState(defaultSvgIcon);
 	const [selectedCat, setSelectedCat] = useState('all-icons');
+	const [svgIcon, setSvgIcon] = useState([]);
 
 	const iconPickerModal = () => {
 		setIconPickerModal(true);
@@ -27,51 +26,51 @@ export default function FBIconPicker(props) {
 	const categories = [
 		{
 			slug: 'all-icons',
-			title: 'All Icons'
+			title: __('All Icons', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'brands',
-			title: 'Brands'
+			title: __('Brands', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'business',
-			title: 'Business'
+			title: __('Business', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'communication',
-			title: 'Communication'
+			title: __('Communication', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'design',
-			title: 'Design'
+			title: __('Design', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'education',
-			title: 'Education'
+			title: __('Education', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'environment',
-			title: 'Environment'
+			title: __('Environment', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'lifestyle-and-hobbies',
-			title: 'Lifestyle'
+			title: __('Lifestyle', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'science-and-technology',
-			title: 'Science'
+			title: __('Science', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'social',
-			title: 'Social'
+			title: __('Social', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'travel',
-			title: 'Travel'
+			title: __('Travel', 'ultimate-addons-for-gutenberg')
 		},
 		{
 			slug: 'others',
-			title: 'Others'
+			title: __('Others', 'ultimate-addons-for-gutenberg')
 		}
 	];
 
@@ -149,9 +148,9 @@ export default function FBIconPicker(props) {
 	const renderIconList = () => {
 		if ( ! filteredDefaultIcons.length ) {
 			return (
-				<div className="fb-ip-icons icon-not-found">
-					<div className="fb-icon-not-available">
-						<span>No Icons Found</span>
+				<div className="uagb-ip-icons icon-not-found">
+					<div className="uagb-icon-not-available">
+						<span>{ __( 'No Icons Found', 'ultimate-addons-for-gutenberg' ) }</span>
 					</div>
 				</div>
 			);
@@ -170,6 +169,8 @@ export default function FBIconPicker(props) {
 			const { columnIndex, key, rowIndex, style } = renderer;
 
 			const currentIcon = filteredDefaultIcons[ rowIndex ][ columnIndex ];
+
+			console.log(currentIcon)
 
 			if ( ! currentIcon ) {
 				return null;
@@ -194,8 +195,10 @@ export default function FBIconPicker(props) {
 							}
 						} }
 					>
-						{ renderSVG( currentIcon ) }
-						<span>{ iconTitle( actualTitle ) }</span>
+						{ renderIcon( currentIcon ) }
+						<Tooltip text={ actualTitle }>
+							<span>{ iconTitle( actualTitle ) }</span>
+						</Tooltip>
 					</div>
 				</div>
 			);
@@ -214,6 +217,73 @@ export default function FBIconPicker(props) {
 					autoContainerWidth={ true }
 				/>
 			</div>
+		);
+	}
+
+	useEffect( () => {
+		fetchSvgIcons().then(icons => {
+			if (icons) {
+				setSvgIcon(icons);
+			}
+		});
+	}, [])
+
+	function parseSVG( svg ) {
+		svg = svg.replace( 'far ', '' );
+		svg = svg.replace( 'fas ', '' );
+		svg = svg.replace( 'fab ', '' );
+		svg = svg.replace( 'fa-', '' );
+		svg = svg.replace( 'fa ', '' );
+	
+		return svg;
+	}
+
+	const renderIcon = (svg, setAttributes = false, extraProps = {}) => {
+		svg = parseSVG( svg );
+
+		let fontAwesome;
+		fontAwesome = svgIcon[ svg ];
+
+		if ( ! fontAwesome ) {
+			return null;
+		}
+
+		const fontAwesomeSvg = fontAwesome.svg?.brands ? fontAwesome.svg.brands : fontAwesome.svg.solid;
+
+		const viewBox = `0 0 ${fontAwesomeSvg.width} ${fontAwesomeSvg.height}`;
+		const path = fontAwesomeSvg.path;
+
+		let align = null;
+
+		switch ( svg ) {
+			case 'align-center':
+				align = { fillRule:'evenodd', clipRule:'evenodd', d : 'M4 2H14V0H4V2ZM0 7H18V5H0V7ZM4 12H14V10H4V12Z' };
+				break;
+			case 'align-left':
+				align = { fillRule:'evenodd', clipRule:'evenodd', d : 'M10 2H0V0H10V2ZM18 7H0V5H18V7ZM10 12H0V10H10V12Z' };
+				break;
+			case 'align-right':
+				align = { fillRule:'evenodd', clipRule:'evenodd', d : 'M8 2H18V0H8V2ZM0 7H18V5H0V7ZM8 12H18V10H8V12Z' };
+				break;
+			case 'align-justify':
+				align = { d : 'M0 0H18V2H0V0ZM0 5.00001H18V7.00001H0V5.00001ZM0 10H18V12H0V10Z' };
+				break;
+		}
+
+		if ( align ) {
+			return <svg width="18" height="12" viewBox="0 0 18 12" xmlns="http://www.w3.org/2000/svg">
+				<path { ...align } />
+			</svg>
+		}
+
+		return ! setAttributes || 'not_set' === setAttributes ? (
+			<svg xmlns="https://www.w3.org/2000/svg" viewBox={ viewBox } {...extraProps}>
+				<path d={ path }></path>
+			</svg>
+		) : (
+			<svg width="20" height="20" xmlns="https://www.w3.org/2000/svg" viewBox={ viewBox } {...extraProps}>
+				<path d={ path }></path>
+			</svg>
 		);
 	}
 
